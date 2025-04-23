@@ -1,2 +1,2 @@
 # FSDCPU Installer
- Install Wizard for FastSD CPU.F
+ Install Wizard for FastSD CPU.
