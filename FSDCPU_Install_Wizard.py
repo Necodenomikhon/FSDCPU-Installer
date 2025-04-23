@@ -1,83 +1,137 @@
 import os
+import sys
 import subprocess
 import tkinter as tk
 from tkinter import messagebox, filedialog
-from tkinter import messagebox, simpledialog
+import tempfile
+import shutil
+import zipfile
+import urllib.request
+
+repo_owner = "Necodenomikhon"
+repo_name = "fastsdcpu"
+branch = "main"
+downloaded_repo_path = None  # Will hold full path once downloaded
+
+import subprocess
+import sys
+import os
+
+def force_install_python311():
+    python_installer = os.path.join(os.path.dirname(__file__), "python3-11_installer.py")
+    print("Running python3-11_installer.py with current interpreter...")
+
+    subprocess.run([sys.executable, python_installer], check=True)
 
 def run_command(command):
-    """Run a shell command and return the output."""
     try:
         result = subprocess.run(command, check=True, text=True, capture_output=True)
         return result.stdout
     except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", e.stderr)
+        messagebox.showerror("Error", e.stderr or str(e))
         return None
 
-def clone_repository():
-    """Clone the GitHub repository."""
-    repo_url = "https://github.com/Necodenomikhon/fastsdcpu"
-    messagebox.showinfo("Cloning", f"Cloning repository from {repo_url}...")
-    run_command(['git', 'clone', repo_url])
-    repo_name = repo_url.split('/')[-1].replace('.git', '')
-    # Change path to repository directory for later operation
-    os.chdir("fastsdcpu")
-    return repo_name
-
-def run_install_script(install_path):
-    """Run the install.bat script."""
+def has_write_permission(path):
     try:
-        # Change the working directory to the specified path
-        os.chdir(install_path)
-        # Clone repo to the specified path
-        clone_repository()
-        # Run the install.bat script
-        subprocess.run(['install.bat'], check=True)
+        test_file = os.path.join(path, '.__permission_test__')
+        with open(test_file, 'w') as f:
+            f.write('test')
+        os.remove(test_file)
+        return True
+    except Exception:
+        return False
+
+
+def download_repo_zip(install_path, root_window):
+    zip_url = f"https://github.com/{repo_owner}/{repo_name}/archive/refs/heads/{branch}.zip"
+
+    try:
+        temp_dir = tempfile.mkdtemp()
+        zip_path = os.path.join(temp_dir, f"{repo_name}.zip")
+
+        messagebox.showinfo("Downloading", f"Downloading repository ZIP...\n{zip_url}", parent=root_window)
+        urllib.request.urlretrieve(zip_url, zip_path)
+
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(temp_dir)
+
+        extracted_folder = os.path.join(temp_dir, f"{repo_name}-{branch}")
+        downloaded_repo_path = os.path.join(install_path, repo_name)
+
+        # Ensure clean target
+        if os.path.exists(downloaded_repo_path):
+            shutil.rmtree(downloaded_repo_path)
+
+        shutil.move(extracted_folder, downloaded_repo_path)
+
+        messagebox.showinfo("Success", f"Repository downloaded to:\n{downloaded_repo_path}", parent=root_window)
+
+    except Exception as e:
+        messagebox.showerror("Download Failed", f"Could not download the repository:\n{e}", parent=root_window)
+    
+    root_window.destroy()
+    open_install_window()
+
+
+def run_install_script():
+    force_install_python311()
+    if not downloaded_repo_path:
+        messagebox.showerror("Error", "Repository has not been downloaded yet.")
+        return
+
+    bat_path = os.path.join(downloaded_repo_path, "install.bat")
+
+    if not os.path.exists(bat_path):
+        messagebox.showerror("Error", f"install.bat not found at:\n{bat_path}")
+        return
+
+    try:
+        subprocess.run([bat_path], check=True, cwd=downloaded_repo_path)
         messagebox.showinfo("Success", "Installation completed successfully!")
     except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"An error occurred: {e}")
+        messagebox.showerror("Error", f"An error occurred while running install.bat:\n{e}")
 
-def select_directory():
-    """Open a dialog to select the directory for downloading the repository."""
+def open_install_window():
+    install_win = tk.Tk()
+    install_win.title("Start Installation")
+    install_win.geometry("350x150")
+
+    tk.Label(install_win, text="Repository downloaded.\nClick Start Installation or Cancel.").pack(pady=15)
+
+    tk.Button(install_win, text="Start Installation", command=run_install_script).pack(pady=5)
+    tk.Button(install_win, text="Cancel", command=install_win.quit).pack(pady=5)
+
+    install_win.mainloop()
+
+def select_directory(entry_widget):
     directory = filedialog.askdirectory()
     if directory:
-        directory_entry.delete(0, tk.END)  # Clear the entry field
-        directory_entry.insert(0, directory)  # Insert the selected directory
+        entry_widget.delete(0, tk.END)
+        entry_widget.insert(0, directory)
 
-def start_installation():
-    """Start the installation process."""
-    install_path = directory_entry.get()
-    if os.path.isdir(install_path):
-        run_install_script(install_path)
-    else:
+def start_download(entry_widget, root_window):
+    install_path = entry_widget.get()
+    if not os.path.isdir(install_path):
         messagebox.showerror("Error", "Please select a valid directory.")
+        return
+    if not has_write_permission(install_path):
+        messagebox.showerror("Permission Denied", f"No write access to:\n{install_path}")
+        return
+    download_repo_zip(install_path, root_window)
 
 def main():
-    """Create the main application window."""
-    global directory_entry  # Make the entry field accessible in other functions
-
     root = tk.Tk()
-    root.title("Install Wizard")
-    root.geometry("400x200")
+    root.title("FastSD CPU Install Wizard")
+    root.geometry("450x250")
 
-    # Label
-    label = tk.Label(root, text="Select the directory to download the repository:")
-    label.pack(pady=10)
+    tk.Label(root, text="Select a directory to download the repository:").pack(pady=10)
 
-    # Entry field for directory
-    directory_entry = tk.Entry(root, width=40)
+    directory_entry = tk.Entry(root, width=50)
     directory_entry.pack(pady=5)
 
-    # Browse button
-    browse_button = tk.Button(root, text="Browse", command=select_directory)
-    browse_button.pack(pady=5)
-
-    # Start Installation button
-    start_button = tk.Button(root, text="Start Installation", command=start_installation)
-    start_button.pack(pady=20)
-
-    # Exit button
-    exit_button = tk.Button(root, text="Exit", command=root.quit)
-    exit_button.pack(pady=5)
+    tk.Button(root, text="Browse", command=lambda: select_directory(directory_entry)).pack(pady=5)
+    tk.Button(root, text="Download Repository", command=lambda: start_download(directory_entry, root)).pack(pady=15)
+    tk.Button(root, text="Exit", command=root.quit).pack(pady=5)
 
     root.mainloop()
 
