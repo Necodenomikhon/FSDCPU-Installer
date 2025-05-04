@@ -1,5 +1,4 @@
 import os
-import sys
 import subprocess
 import tkinter as tk
 from tkinter import messagebox, filedialog
@@ -13,15 +12,14 @@ repo_name = "fastsdcpu"
 branch = "main"
 downloaded_repo_path = None  # Will hold full path once downloaded
 
-import subprocess
-import sys
-import os
-
 def force_install_python311():
-    python_installer = os.path.join(os.path.dirname(__file__), "python3-11_installer.py")
-    print("Running python3-11_installer.py with current interpreter...")
+    try:
+        import python3_11_installer
+        python3_11_installer.install_python311()
+    except Exception as e:
+        messagebox.showerror("Error", f"Python 3.11 installation failed:\n{e}")
 
-    subprocess.run([sys.executable, python_installer], check=True)
+    open_install_window()  
 
 def run_command(command):
     try:
@@ -43,6 +41,8 @@ def has_write_permission(path):
 
 
 def download_repo_zip(install_path, root_window):
+    global downloaded_repo_path
+
     zip_url = f"https://github.com/{repo_owner}/{repo_name}/archive/refs/heads/{branch}.zip"
 
     try:
@@ -70,11 +70,12 @@ def download_repo_zip(install_path, root_window):
         messagebox.showerror("Download Failed", f"Could not download the repository:\n{e}", parent=root_window)
     
     root_window.destroy()
-    open_install_window()
+    open_install_python_window()
 
 
-def run_install_script():
-    force_install_python311()
+def run_install_script(run_install_window):
+    run_install_window.destroy()
+
     if not downloaded_repo_path:
         messagebox.showerror("Error", "Repository has not been downloaded yet.")
         return
@@ -91,17 +92,34 @@ def run_install_script():
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"An error occurred while running install.bat:\n{e}")
 
-def open_install_window():
+def skip_to_FSDCPU_Install():
+    open_install_window()
+
+
+def open_install_window(install_python_window):
+    install_python_window.destroy() 
+
     install_win = tk.Tk()
     install_win.title("Start Installation")
     install_win.geometry("350x150")
 
     tk.Label(install_win, text="Repository downloaded.\nClick Start Installation or Cancel.").pack(pady=15)
 
-    tk.Button(install_win, text="Start Installation", command=run_install_script).pack(pady=5)
+    tk.Button(install_win, text="Start Installation", command=lambda: run_install_script(install_win)).pack(pady=5)
     tk.Button(install_win, text="Cancel", command=install_win.quit).pack(pady=5)
 
-    install_win.mainloop()
+def open_install_python_window():
+    install_python_win = tk.Tk()
+    install_python_win.title("Start Python Installation")
+    install_python_win.geometry("350x250")
+
+    tk.Label(install_python_win, text="Repository downloaded.\nPython 3.11 is required to run FastSDCPU. \nIf you have Python 3.11 already, Click Skip. \nOtherwise, Click Start Installation or Cancel.").pack(pady=15)
+    
+    tk.Button(install_python_win, text="Start Python 3.11 Installation", command=force_install_python311).pack(pady=5)
+    tk.Button(install_python_win, text="Skip to FastSD CPU Installation", command=lambda: open_install_window(install_python_win)).pack(pady=5)
+    tk.Button(install_python_win, text="Cancel", command=install_python_win.quit).pack(pady=5)
+
+    install_python_win.mainloop()
 
 def select_directory(entry_widget):
     directory = filedialog.askdirectory()
