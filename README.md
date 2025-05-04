@@ -41,8 +41,9 @@ The wizard and installer depend on the following components:
 
 ## 🚀 Getting Started
 
-1. Download and Run [FSDCPU_Install_Wizard.exe]
+1. Download and Run [FSDCPU_Install_Wizard.exe](https://github.com/Necodenomikhon/FSDCPU-Installer/blob/3b1486ce1737cae847096ae98dd32f0a7a79936c/dist/FSDCPU_Install_Wizard.exe)
 
+Alternatively:
 1. Clone or download this repository.
 2. Run the install wizard:
 
