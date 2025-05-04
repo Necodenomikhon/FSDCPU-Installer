@@ -1,4 +1,4 @@
-# FastSD CPU Install Wizard
+# FastSD CPU Installer
 
 [Fast SD CPU](https://github.com/rupeshs/fastsdcpu) a standalone CPU-based implementation of the [Fast Stable Diffusion (FastSD)] image generation framework. It is designed to offer compatibility with lower-resource machines by enabling local execution without the need for GPU acceleration.
 
