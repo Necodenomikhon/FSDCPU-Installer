@@ -40,6 +40,6 @@ The wizard and installer depend on the following components:
 
 ## 🚀 Getting Started
 
-1. Download and Run [FSDCPU_Install_Wizard.exe](https://github.com/Necodenomikhon/FSDCPU-Installer/releases/tag/v1.0.0-beta-1)
+1. Download and Run the latest release of the [FSDCPU_Install_Wizard.exe](https://github.com/Necodenomikhon/FSDCPU-Installer/releases/tag/v1.0.0-beta.2)
 2. In the fastsdcpu folder, double-click the start.bat file.
   - Alternatively, double-click the start-webui.bat file and search http://127.0.0.1:7860 in your browser.
